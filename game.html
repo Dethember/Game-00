@@ -1,1 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dethember Game - Prototype v0.2</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
 
+    body {
+      background-color: #050505;
+      color: #c0c0c0;
+      font-family: monospace;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      overflow: hidden;
+    }
+
+    h1 {
+      margin-bottom: 10px;
+      color: #791b1b;
+      letter-spacing: 2px;
+    }
+
+    #gameCanvas {
+      border: 2px solid #791b1b;
+      box-shadow: 0 0 25px rgba(121, 27, 27, 0.6);
+      background-color: #08080a;
+      display: block;
+    }
+
+    .controls-info {
+      margin-top: 15px;
+      font-size: 14px;
+      color: #888;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>DETHEMBER GAME - TEST RUN</h1>
+  <canvas id="gameCanvas" width="960" height="540"></canvas>
+
+  <div class="controls-info">
+    Movement: <strong>A / D</strong> or <strong>Left / Right Arrows</strong> | 
+    Jump: <strong>W / Space / Up Arrow</strong> | 
+    Attack: <strong>J / Z</strong>
+  </div>
+
+  <script>
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // Load Background & Sprite Sheet
+    const bgImage = new Image();
+    bgImage.src = 'BGDARK.png';
+
+    const playerSprites = new Image();
+    playerSprites.src = 'CH000 player-sprites.png';
+
+    // Floor Baseline Alignment
+    const groundY = 460;
+
+    // Dimensions per frame in the sprite strip
+    const FRAME_WIDTH = 128;
+    const FRAME_HEIGHT = 128;
+
+    // Frame indexes corresponding to your strip
+    const FRAMES = {
+      IDLE: 0,
+      FRONT: 1,
+      SIDE: 2,
+      BACK: 3,
+      WALK: 4,
+      ATTACK: 5,
+      JUMP: 6,
+      HURT: 7,
+      DEATH: 8
+    };
+
+    // Player Physics & State Object
+    const player = {
+      x: 120,
+      y: groundY - 128,
+      width: 128,
+      height: 128,
+      vx: 0,
+      vy: 0,
+      speed: 4.5,
+      jumpStrength: -13,
+      gravity: 0.6,
+      isGrounded: false,
+      facingRight: true,
+      isAttacking: false,
+      attackTimer: 0,
+      currentFrame: FRAMES.IDLE
+    };
+
+    // Keyboard Controls Tracking
+    const keys = {
+      left: false,
+      right: false,
+      up: false
+    };
+
+    window.addEventListener('keydown', (e) => {
+      if (['ArrowLeft', 'a', 'A'].includes(e.key)) keys.left = true;
+      if (['ArrowRight', 'd', 'D'].includes(e.key)) keys.right = true;
+      if (['ArrowUp', 'w', 'W', ' '].includes(e.key)) keys.up = true;
+      if (['j', 'J', 'z', 'Z'].includes(e.key) && !player.isAttacking) {
+        player.isAttacking = true;
+        player.attackTimer = 16;
+      }
+    });
+
+    window.addEventListener('keyup', (e) => {
+      if (['ArrowLeft', 'a', 'A'].includes(e.key)) keys.left = false;
+      if (['ArrowRight', 'd', 'D'].includes(e.key)) keys.right = false;
+      if (['ArrowUp', 'w', 'W', ' '].includes(e.key)) keys.up = false;
+    });
+
+    function update() {
+      // Horizontal Movement
+      if (keys.left) {
+        player.vx = -player.speed;
+        player.facingRight = false;
+      } else if (keys.right) {
+        player.vx = player.speed;
+        player.facingRight = true;
+      } else {
+        player.vx = 0;
+      }
+
+      // Jump Logic
+      if (keys.up && player.isGrounded) {
+        player.vy = player.jumpStrength;
+        player.isGrounded = false;
+      }
+
+      // Physics Math
+      player.x += player.vx;
+      player.vy += player.gravity;
+      player.y += player.vy;
+
+      // Ground Collision
+      if (player.y + player.height >= groundY) {
+        player.y = groundY - player.height;
+        player.vy = 0;
+        player.isGrounded = true;
+      }
+
+      // Screen Boundaries
+      if (player.x < -20) player.x = -20;
+      if (player.x + player.width > canvas.width + 20) player.x = canvas.width - player.width + 20;
+
+      // Attack Animation Timer
+      if (player.isAttacking) {
+        player.attackTimer--;
+        if (player.attackTimer <= 0) {
+          player.isAttacking = false;
+        }
+      }
+
+      // Choose Current Frame Index
+      if (player.isAttacking) {
+        player.currentFrame = FRAMES.ATTACK;
+      } else if (!player.isGrounded) {
+        player.currentFrame = FRAMES.JUMP;
+      } else if (player.vx !== 0) {
+        player.currentFrame = FRAMES.WALK;
+      } else {
+        player.currentFrame = FRAMES.IDLE;
+      }
+    }
+
+    function render() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      // Draw Background
+      if (bgImage.complete && bgImage.naturalWidth !== 0) {
+        ctx.drawImage(bgImage, 0, 0, canvas.width, canvas.height);
+      } else {
+        ctx.fillStyle = '#0f0a0a';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+      }
+
+      // Draw Ground Floor Line
+      ctx.strokeStyle = '#4a0e0e';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(0, groundY);
+      ctx.lineTo(canvas.width, groundY);
+      ctx.stroke();
+
+      // Render Player Character Sprite Frame
+      if (playerSprites.complete && playerSprites.naturalWidth !== 0) {
+        ctx.save();
+
+        if (!player.facingRight) {
+          ctx.translate(player.x + player.width, player.y);
+          ctx.scale(-1, 1);
+          ctx.drawImage(
+            playerSprites,
+            player.currentFrame * FRAME_WIDTH, 0, FRAME_WIDTH, FRAME_HEIGHT,
+            0, 0, player.width, player.height
+          );
+        } else {
+          ctx.drawImage(
+            playerSprites,
+            player.currentFrame * FRAME_WIDTH, 0, FRAME_WIDTH, FRAME_HEIGHT,
+            player.x, player.y, player.width, player.height
+          );
+        }
+
+        ctx.restore();
+      }
+    }
+
+    function gameLoop() {
+      update();
+      render();
+      requestAnimationFrame(gameLoop);
+    }
+
+    gameLoop();
+  </script>
+</body>
+</html>
