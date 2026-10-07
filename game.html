@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Dethember Game - Prototype v0.3</title>
+  <title>Dethember Game - Prototype v0.4</title>
   <style>
     * {
       box-sizing: border-box;
@@ -24,16 +24,19 @@
     }
 
     h1 {
-      margin-bottom: 10px;
+      margin-bottom: 12px;
       color: #791b1b;
       letter-spacing: 2px;
+      text-transform: uppercase;
     }
 
     #gameCanvas {
       border: 2px solid #791b1b;
-      box-shadow: 0 0 25px rgba(121, 27, 27, 0.6);
+      box-shadow: 0 0 30px rgba(121, 27, 27, 0.7);
       background-color: #08080a;
       display: block;
+      max-width: 95vw;
+      max-height: 80vh;
     }
 
     .controls-info {
@@ -47,7 +50,7 @@
 <body>
 
   <h1>DETHEMBER GAME - TEST RUN</h1>
-  <canvas id="gameCanvas" width="960" height="540"></canvas>
+  <canvas id="gameCanvas" width="1280" height="720"></canvas>
 
   <div class="controls-info">
     Movement: <strong>A / D</strong> or <strong>Left / Right Arrows</strong> | 
@@ -63,7 +66,7 @@
     const bgImage = new Image();
     bgImage.src = 'BGDARK.png';
 
-    // Load Individual Move PNGs with exact filenames
+    // Load New Character Sprites
     const sprites = {
       idle: new Image(),
       front: new Image(),
@@ -76,28 +79,31 @@
       death: new Image()
     };
 
-    sprites.idle.src = 'CH 000 idle.png';
-    sprites.front.src = 'CH 000 front.png';
-    sprites.side.src = 'CH 000 side.png';
-    sprites.back.src = 'CH 000 back.png';
-    sprites.walk.src = 'CH 000 walk.png';
-    sprites.attack.src = 'CH 000 attack.png';
-    sprites.jump.src = 'CH 000 jump.png';
-    sprites.hurt.src = 'CH 000 hurt.png';
-    sprites.death.src = 'CH 000 death.png';
+    sprites.idle.src = 'Jane idle.png';
+    sprites.front.src = 'Jane front.png';
+    sprites.side.src = 'Jane Side.png';
+    sprites.back.src = 'Jane back.png';
+    sprites.walk.src = 'Jane walk.png';
+    sprites.attack.src = 'Jane attack.png';
+    sprites.jump.src = 'Jane jump.png';
+    sprites.hurt.src = 'Jane hurt.png';
+    sprites.death.src = 'Jane death.png';
 
-    // Ground Baseline
-    const groundY = 460;
+    // Ground Baseline (Adjusted for higher canvas height)
+    const groundY = 620;
+
+    // Scale Multiplier for Character Rendering
+    const spriteScale = 2.0;
 
     // Player State & Physics
     const player = {
-      x: 120,
-      y: groundY - 128,
+      x: 150,
+      y: groundY - 200,
       vx: 0,
       vy: 0,
-      speed: 4.5,
-      jumpStrength: -13,
-      gravity: 0.6,
+      speed: 5.5,
+      jumpStrength: -15,
+      gravity: 0.65,
       isGrounded: false,
       facingRight: true,
       isAttacking: false,
@@ -113,7 +119,7 @@
       if (['ArrowUp', 'w', 'W', ' '].includes(e.key)) keys.up = true;
       if (['j', 'J', 'z', 'Z'].includes(e.key) && !player.isAttacking) {
         player.isAttacking = true;
-        player.attackTimer = 18;
+        player.attackTimer = 22;
       }
     });
 
@@ -146,19 +152,20 @@
       player.vy += player.gravity;
       player.y += player.vy;
 
-      // Active image height determination for ground collision
-      const currentHeight = player.currentSprite.naturalHeight || 128;
+      // Active image height scaled for ground collision calculation
+      const baseHeight = player.currentSprite.naturalHeight || 200;
+      const currentScaledHeight = baseHeight * spriteScale;
 
       // Ground Collision
-      if (player.y + currentHeight >= groundY) {
-        player.y = groundY - currentHeight;
+      if (player.y + currentScaledHeight >= groundY) {
+        player.y = groundY - currentScaledHeight;
         player.vy = 0;
         player.isGrounded = true;
       }
 
       // Canvas Boundaries
-      if (player.x < -20) player.x = -20;
-      if (player.x > canvas.width - 80) player.x = canvas.width - 80;
+      if (player.x < -30) player.x = -30;
+      if (player.x > canvas.width - 150) player.x = canvas.width - 150;
 
       // Attack Duration Timer
       if (player.isAttacking) {
@@ -183,29 +190,29 @@
     function render() {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-      // Render Background Stage
+      // Render Stage Background
       if (bgImage.complete && bgImage.naturalWidth !== 0) {
         ctx.drawImage(bgImage, 0, 0, canvas.width, canvas.height);
       } else {
-        ctx.fillStyle = '#0f0a0a';
+        ctx.fillStyle = '#0a080c';
         ctx.fillRect(0, 0, canvas.width, canvas.height);
       }
 
-      // Render Floor Line
-      ctx.strokeStyle = '#4a0e0e';
-      ctx.lineWidth = 2;
+      // Render Floor Baseline
+      ctx.strokeStyle = '#5c1212';
+      ctx.lineWidth = 3;
       ctx.beginPath();
       ctx.moveTo(0, groundY);
       ctx.lineTo(canvas.width, groundY);
       ctx.stroke();
 
-      // Render Character Sprite dynamically using image natural dimensions
+      // Render Character Sprite dynamically using image natural dimensions & scale
       const activeImg = player.currentSprite;
       if (activeImg.complete && activeImg.naturalWidth !== 0) {
         ctx.save();
         
-        const renderWidth = activeImg.naturalWidth;
-        const renderHeight = activeImg.naturalHeight;
+        const renderWidth = activeImg.naturalWidth * spriteScale;
+        const renderHeight = activeImg.naturalHeight * spriteScale;
 
         if (!player.facingRight) {
           ctx.translate(player.x + renderWidth, player.y);
