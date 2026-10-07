@@ -93,8 +93,6 @@
     const player = {
       x: 120,
       y: groundY - 128,
-      width: 128,
-      height: 128,
       vx: 0,
       vy: 0,
       speed: 4.5,
@@ -115,7 +113,7 @@
       if (['ArrowUp', 'w', 'W', ' '].includes(e.key)) keys.up = true;
       if (['j', 'J', 'z', 'Z'].includes(e.key) && !player.isAttacking) {
         player.isAttacking = true;
-        player.attackTimer = 16;
+        player.attackTimer = 18;
       }
     });
 
@@ -126,7 +124,7 @@
     });
 
     function update() {
-      // Movement Logic
+      // Horizontal Movement
       if (keys.left) {
         player.vx = -player.speed;
         player.facingRight = false;
@@ -148,18 +146,21 @@
       player.vy += player.gravity;
       player.y += player.vy;
 
+      // Active image height determination for ground collision
+      const currentHeight = player.currentSprite.naturalHeight || 128;
+
       // Ground Collision
-      if (player.y + player.height >= groundY) {
-        player.y = groundY - player.height;
+      if (player.y + currentHeight >= groundY) {
+        player.y = groundY - currentHeight;
         player.vy = 0;
         player.isGrounded = true;
       }
 
-      // Boundaries
+      // Canvas Boundaries
       if (player.x < -20) player.x = -20;
-      if (player.x + player.width > canvas.width + 20) player.x = canvas.width - player.width + 20;
+      if (player.x > canvas.width - 80) player.x = canvas.width - 80;
 
-      // Attack Timer
+      // Attack Duration Timer
       if (player.isAttacking) {
         player.attackTimer--;
         if (player.attackTimer <= 0) {
@@ -167,7 +168,7 @@
         }
       }
 
-      // Select Active Image State
+      // Select Active Sprite State
       if (player.isAttacking) {
         player.currentSprite = sprites.attack;
       } else if (!player.isGrounded) {
@@ -182,7 +183,7 @@
     function render() {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-      // Render Stage Background
+      // Render Background Stage
       if (bgImage.complete && bgImage.naturalWidth !== 0) {
         ctx.drawImage(bgImage, 0, 0, canvas.width, canvas.height);
       } else {
@@ -190,7 +191,7 @@
         ctx.fillRect(0, 0, canvas.width, canvas.height);
       }
 
-      // Render Floor Baseline
+      // Render Floor Line
       ctx.strokeStyle = '#4a0e0e';
       ctx.lineWidth = 2;
       ctx.beginPath();
@@ -198,16 +199,20 @@
       ctx.lineTo(canvas.width, groundY);
       ctx.stroke();
 
-      // Render Player Image
+      // Render Character Sprite dynamically using image natural dimensions
       const activeImg = player.currentSprite;
       if (activeImg.complete && activeImg.naturalWidth !== 0) {
         ctx.save();
+        
+        const renderWidth = activeImg.naturalWidth;
+        const renderHeight = activeImg.naturalHeight;
+
         if (!player.facingRight) {
-          ctx.translate(player.x + player.width, player.y);
+          ctx.translate(player.x + renderWidth, player.y);
           ctx.scale(-1, 1);
-          ctx.drawImage(activeImg, 0, 0, player.width, player.height);
+          ctx.drawImage(activeImg, 0, 0, renderWidth, renderHeight);
         } else {
-          ctx.drawImage(activeImg, player.x, player.y, player.width, player.height);
+          ctx.drawImage(activeImg, player.x, player.y, renderWidth, renderHeight);
         }
         ctx.restore();
       }
