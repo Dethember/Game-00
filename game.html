@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Dethember Game - Prototype v0.2</title>
+  <title>Dethember Game - Prototype v0.3</title>
   <style>
     * {
       box-sizing: border-box;
@@ -59,34 +59,37 @@
     const canvas = document.getElementById('gameCanvas');
     const ctx = canvas.getContext('2d');
 
-    // Load Background & Sprite Sheet
+    // Load Stage Background
     const bgImage = new Image();
     bgImage.src = 'BGDARK.png';
 
-    const playerSprites = new Image();
-    playerSprites.src = 'CH000 player-sprites.png';
-
-    // Floor Baseline Alignment
-    const groundY = 460;
-
-    // Dimensions per frame in the sprite strip
-    const FRAME_WIDTH = 128;
-    const FRAME_HEIGHT = 128;
-
-    // Frame indexes corresponding to your strip
-    const FRAMES = {
-      IDLE: 0,
-      FRONT: 1,
-      SIDE: 2,
-      BACK: 3,
-      WALK: 4,
-      ATTACK: 5,
-      JUMP: 6,
-      HURT: 7,
-      DEATH: 8
+    // Load Individual Move PNGs with exact filenames
+    const sprites = {
+      idle: new Image(),
+      front: new Image(),
+      side: new Image(),
+      back: new Image(),
+      walk: new Image(),
+      attack: new Image(),
+      jump: new Image(),
+      hurt: new Image(),
+      death: new Image()
     };
 
-    // Player Physics & State Object
+    sprites.idle.src = 'CH 000 idle.png';
+    sprites.front.src = 'CH 000 front.png';
+    sprites.side.src = 'CH 000 side.png';
+    sprites.back.src = 'CH 000 back.png';
+    sprites.walk.src = 'CH 000 walk.png';
+    sprites.attack.src = 'CH 000 attack.png';
+    sprites.jump.src = 'CH 000 jump.png';
+    sprites.hurt.src = 'CH 000 hurt.png';
+    sprites.death.src = 'CH 000 death.png';
+
+    // Ground Baseline
+    const groundY = 460;
+
+    // Player State & Physics
     const player = {
       x: 120,
       y: groundY - 128,
@@ -101,15 +104,10 @@
       facingRight: true,
       isAttacking: false,
       attackTimer: 0,
-      currentFrame: FRAMES.IDLE
+      currentSprite: sprites.idle
     };
 
-    // Keyboard Controls Tracking
-    const keys = {
-      left: false,
-      right: false,
-      up: false
-    };
+    const keys = { left: false, right: false, up: false };
 
     window.addEventListener('keydown', (e) => {
       if (['ArrowLeft', 'a', 'A'].includes(e.key)) keys.left = true;
@@ -128,7 +126,7 @@
     });
 
     function update() {
-      // Horizontal Movement
+      // Movement Logic
       if (keys.left) {
         player.vx = -player.speed;
         player.facingRight = false;
@@ -145,7 +143,7 @@
         player.isGrounded = false;
       }
 
-      // Physics Math
+      // Apply Physics
       player.x += player.vx;
       player.vy += player.gravity;
       player.y += player.vy;
@@ -157,11 +155,11 @@
         player.isGrounded = true;
       }
 
-      // Screen Boundaries
+      // Boundaries
       if (player.x < -20) player.x = -20;
       if (player.x + player.width > canvas.width + 20) player.x = canvas.width - player.width + 20;
 
-      // Attack Animation Timer
+      // Attack Timer
       if (player.isAttacking) {
         player.attackTimer--;
         if (player.attackTimer <= 0) {
@@ -169,22 +167,22 @@
         }
       }
 
-      // Choose Current Frame Index
+      // Select Active Image State
       if (player.isAttacking) {
-        player.currentFrame = FRAMES.ATTACK;
+        player.currentSprite = sprites.attack;
       } else if (!player.isGrounded) {
-        player.currentFrame = FRAMES.JUMP;
+        player.currentSprite = sprites.jump;
       } else if (player.vx !== 0) {
-        player.currentFrame = FRAMES.WALK;
+        player.currentSprite = sprites.walk;
       } else {
-        player.currentFrame = FRAMES.IDLE;
+        player.currentSprite = sprites.idle;
       }
     }
 
     function render() {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-      // Draw Background
+      // Render Stage Background
       if (bgImage.complete && bgImage.naturalWidth !== 0) {
         ctx.drawImage(bgImage, 0, 0, canvas.width, canvas.height);
       } else {
@@ -192,7 +190,7 @@
         ctx.fillRect(0, 0, canvas.width, canvas.height);
       }
 
-      // Draw Ground Floor Line
+      // Render Floor Baseline
       ctx.strokeStyle = '#4a0e0e';
       ctx.lineWidth = 2;
       ctx.beginPath();
@@ -200,26 +198,17 @@
       ctx.lineTo(canvas.width, groundY);
       ctx.stroke();
 
-      // Render Player Character Sprite Frame
-      if (playerSprites.complete && playerSprites.naturalWidth !== 0) {
+      // Render Player Image
+      const activeImg = player.currentSprite;
+      if (activeImg.complete && activeImg.naturalWidth !== 0) {
         ctx.save();
-
         if (!player.facingRight) {
           ctx.translate(player.x + player.width, player.y);
           ctx.scale(-1, 1);
-          ctx.drawImage(
-            playerSprites,
-            player.currentFrame * FRAME_WIDTH, 0, FRAME_WIDTH, FRAME_HEIGHT,
-            0, 0, player.width, player.height
-          );
+          ctx.drawImage(activeImg, 0, 0, player.width, player.height);
         } else {
-          ctx.drawImage(
-            playerSprites,
-            player.currentFrame * FRAME_WIDTH, 0, FRAME_WIDTH, FRAME_HEIGHT,
-            player.x, player.y, player.width, player.height
-          );
+          ctx.drawImage(activeImg, player.x, player.y, player.width, player.height);
         }
-
         ctx.restore();
       }
     }
