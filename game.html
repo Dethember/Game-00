@@ -152,15 +152,15 @@
     // Ground Baseline
     const groundY = 480;
 
-    // Player State & Physics
+    // Player State & Calibrated Physics for Normal Speed
     const player = {
       x: 120,
       y: groundY - CHAR_HEIGHT,
       vx: 0,
       vy: 0,
-      speed: 4.5,
-      jumpStrength: -13,
-      gravity: 0.6,
+      speed: 2.8,           // Reduced from 4.5 for walking
+      jumpStrength: -9.5,   // Reduced from -13 for lower jump velocity
+      gravity: 0.35,        // Reduced from 0.6 for floatier, realistic descent
       isGrounded: false,
       facingRight: true,
       isAttacking: false,
@@ -177,7 +177,7 @@
       if (['ArrowUp', 'w', 'W', ' '].includes(e.key)) keys.up = true;
       if (['j', 'J', 'z', 'Z'].includes(e.key) && !player.isAttacking) {
         player.isAttacking = true;
-        player.attackTimer = 18;
+        player.attackTimer = 35; // Increased from 18 frames to hold attack stance longer
       }
     });
 
@@ -202,7 +202,7 @@
     bindTouchBtn('btnAttack', () => {
       if (!player.isAttacking) {
         player.isAttacking = true;
-        player.attackTimer = 18;
+        player.attackTimer = 35;
       }
     }, () => {});
 
