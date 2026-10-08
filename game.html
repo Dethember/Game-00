@@ -59,11 +59,11 @@
     const canvas = document.getElementById('gameCanvas');
     const ctx = canvas.getContext('2d');
 
-    // Load Stage Background (1777 x 1000 original pixels mapped to 960x540 canvas)
+    // Load Stage Background
     const bgImage = new Image();
     bgImage.src = 'BGDARK.png';
 
-    // Load Individual Move PNGs & JPGs with exact Jane filenames
+    // Load Individual Move PNGs with exact Jane filenames in .png format
     const sprites = {
       idle: new Image(),
       front: new Image(),
@@ -77,18 +77,18 @@
     };
 
     sprites.idle.src = 'Jane idle.png';
-    sprites.front.src = 'Jane front.jpg';
-    sprites.side.src = 'Jane Side.jpg';
-    sprites.back.src = 'Jane back.jpg';
-    sprites.walk.src = 'Jane walk.jpg';
-    sprites.attack.src = 'Jane attack.jpg';
-    sprites.jump.src = 'Jane jump.jpg';
-    sprites.hurt.src = 'Jane hurt.jpg';
-    sprites.death.src = 'Jane death.jpg';
+    sprites.front.src = 'Jane front.png';
+    sprites.side.src = 'Jane Side.png';
+    sprites.back.src = 'Jane back.png';
+    sprites.walk.src = 'Jane walk.png';
+    sprites.attack.src = 'Jane attack.png';
+    sprites.jump.src = 'Jane jump.png';
+    sprites.hurt.src = 'Jane hurt.png';
+    sprites.death.src = 'Jane death.png';
 
-    // Character Base Dimensions
-    const CHAR_WIDTH = 142;  // Scaled proportionally for gameplay view (Aspect Ratio 284:500)
-    const CHAR_HEIGHT = 250; // Half of 500px to fit comfortably on 540px high canvas
+    // Character Base Dimensions (Scaled proportionally to fit the 960x540 canvas)
+    const CHAR_WIDTH = 142;
+    const CHAR_HEIGHT = 250;
 
     // Ground Baseline
     const groundY = 480;
@@ -200,7 +200,7 @@
       ctx.lineTo(canvas.width, groundY);
       ctx.stroke();
 
-      // Render Character Sprite with updated Jane dimensions & scaling
+      // Render Character Sprite
       const activeImg = player.currentSprite;
       if (activeImg.complete && activeImg.naturalWidth !== 0) {
         ctx.save();
