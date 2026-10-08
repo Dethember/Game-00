@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Dethember Game - Prototype v0.5</title>
+  <title>Dethember Game - Custom Stage v0.5</title>
   <style>
     * {
       box-sizing: border-box;
@@ -12,7 +12,7 @@
     }
 
     body {
-      background-color: #050505;
+      background-color: #030303;
       color: #c0c0c0;
       font-family: monospace;
       display: flex;
@@ -24,37 +24,38 @@
     }
 
     h1 {
-      margin-bottom: 12px;
+      margin-bottom: 10px;
       color: #791b1b;
       letter-spacing: 2px;
       text-transform: uppercase;
+      font-size: 20px;
     }
 
     #gameCanvas {
       border: 2px solid #791b1b;
-      box-shadow: 0 0 30px rgba(121, 27, 27, 0.7);
-      background-color: #08080a;
+      box-shadow: 0 0 35px rgba(121, 27, 27, 0.6);
+      background-color: #050507;
       display: block;
       max-width: 95vw;
       max-height: 80vh;
     }
 
     .controls-info {
-      margin-top: 15px;
-      font-size: 14px;
-      color: #888;
+      margin-top: 12px;
+      font-size: 13px;
+      color: #777;
       text-align: center;
     }
   </style>
 </head>
 <body>
 
-  <h1>DETHEMBER GAME - TEST RUN</h1>
-  <canvas id="gameCanvas" width="1280" height="720"></canvas>
+  <h1>DETHEMBER - THE RED REALM</h1>
+  <canvas id="gameCanvas" width="1280" height="640"></canvas>
 
   <div class="controls-info">
-    Movement: <strong>A / D</strong> or <strong>Left / Right Arrows</strong> | 
-    Jump: <strong>W / Space / Up Arrow</strong> | 
+    Move: <strong>A / D</strong> or <strong>Left / Right Arrows</strong> | 
+    Jump: <strong>W / Space / Up</strong> | 
     Attack: <strong>J / Z</strong>
   </div>
 
@@ -62,7 +63,7 @@
     const canvas = document.getElementById('gameCanvas');
     const ctx = canvas.getContext('2d');
 
-    // Load Panoramic Background Image
+    // Load Wide Background (2400 x 448)
     const bgImage = new Image();
     bgImage.src = 'background .jpg';
 
@@ -89,25 +90,32 @@
     sprites.hurt.src = 'Jane hurt.png';
     sprites.death.src = 'Jane death.png';
 
-    // World & Ground Settings
-    const worldWidth = 3840; // 3x canvas width for expansive scrolling
-    const groundY = 620;
-    const spriteScale = 2.0;
+    // World & Scaling Configuration
+    const bgOrigW = 2400;
+    const bgOrigH = 448;
+    // Scale background height to match canvas height (640px), maintaining aspect ratio for width
+    const worldHeight = canvas.height;
+    const worldWidth = bgOrigW * (worldHeight / bgOrigH); // ~3428px wide world
 
-    // Camera Object
+    // Ground line aligned with the rocky terrain in your background
+    const groundY = 530;
+
+    // Scale factor to fit Jane perfectly into the 640px height canvas
+    const spriteScale = 0.65;
+
+    // Camera and Player State
     const camera = {
       x: 0,
       width: canvas.width,
-      height: canvas.height
+      maxX: worldWidth - canvas.width
     };
 
-    // Player State & Physics (Positioned in World Space)
     const player = {
-      x: 300,
-      y: groundY - 200,
+      x: 200, // World X position
+      y: groundY - 250,
       vx: 0,
       vy: 0,
-      speed: 5.5,
+      speed: 6,
       jumpStrength: -15,
       gravity: 0.65,
       isGrounded: false,
@@ -158,28 +166,27 @@
       player.vy += player.gravity;
       player.y += player.vy;
 
-      // Active image height scaled for ground collision calculation
-      const baseHeight = player.currentSprite.naturalHeight || 200;
+      // Ground Collision
+      const activeImg = player.currentSprite;
+      const baseHeight = activeImg.naturalHeight || 300;
       const currentScaledHeight = baseHeight * spriteScale;
 
-      // Ground Collision
       if (player.y + currentScaledHeight >= groundY) {
         player.y = groundY - currentScaledHeight;
         player.vy = 0;
         player.isGrounded = true;
       }
 
-      // World Boundaries (Keep player inside the wide stage)
-      if (player.x < 50) player.x = 50;
-      if (player.x > worldWidth - 150) player.x = worldWidth - 150;
+      // World Boundary Limits
+      if (player.x < 20) player.x = 20;
+      if (player.x > worldWidth - 120) player.x = worldWidth - 120;
 
-      // Update Camera to Follow Player Smoothly
-      camera.x = player.x - camera.width / 2;
-      // Clamp camera within world bounds
+      // Camera Tracking (Follows player horizontally across the 2400+ px world)
+      camera.x = player.x - canvas.width / 2;
       if (camera.x < 0) camera.x = 0;
-      if (camera.x > worldWidth - camera.width) camera.x = worldWidth - camera.width;
+      if (camera.x > camera.maxX) camera.x = camera.maxX;
 
-      // Attack Duration Timer
+      // Attack Timer
       if (player.isAttacking) {
         player.attackTimer--;
         if (player.attackTimer <= 0) {
@@ -187,7 +194,7 @@
         }
       }
 
-      // Select Active Sprite State
+      // Select Sprite State
       if (player.isAttacking) {
         player.currentSprite = sprites.attack;
       } else if (!player.isGrounded) {
@@ -202,22 +209,22 @@
     function render() {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-      // Render Panoramic Background stretched across the entire world width
+      // Render Parallax / Scrolling Background
       if (bgImage.complete && bgImage.naturalWidth !== 0) {
-        // Draw background shifted by camera position for scrolling effect
-        ctx.drawImage(bgImage, -camera.x, 0, worldWidth, canvas.height);
+        ctx.drawImage(bgImage, -camera.x, 0, worldWidth, worldHeight);
       } else {
-        ctx.fillStyle = '#0a080c';
+        ctx.fillStyle = '#100508';
         ctx.fillRect(0, 0, canvas.width, canvas.height);
       }
 
-      // Render Character Sprite in World Space (offset by camera position)
+      // Render Character (Translated by camera position)
       const activeImg = player.currentSprite;
       if (activeImg.complete && activeImg.naturalWidth !== 0) {
         ctx.save();
         
         const renderWidth = activeImg.naturalWidth * spriteScale;
         const renderHeight = activeImg.naturalHeight * spriteScale;
+        // Screen position = World position - Camera position
         const screenX = player.x - camera.x;
 
         if (!player.facingRight) {
