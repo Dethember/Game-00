@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Dethember Game - Custom Stage v0.5</title>
+  <title>Dethember Game - Prototype v0.3</title>
   <style>
     * {
       box-sizing: border-box;
@@ -12,7 +12,7 @@
     }
 
     body {
-      background-color: #030303;
+      background-color: #050505;
       color: #c0c0c0;
       font-family: monospace;
       display: flex;
@@ -27,35 +27,31 @@
       margin-bottom: 10px;
       color: #791b1b;
       letter-spacing: 2px;
-      text-transform: uppercase;
-      font-size: 20px;
     }
 
     #gameCanvas {
       border: 2px solid #791b1b;
-      box-shadow: 0 0 35px rgba(121, 27, 27, 0.6);
-      background-color: #050507;
+      box-shadow: 0 0 25px rgba(121, 27, 27, 0.6);
+      background-color: #08080a;
       display: block;
-      max-width: 95vw;
-      max-height: 80vh;
     }
 
     .controls-info {
-      margin-top: 12px;
-      font-size: 13px;
-      color: #777;
+      margin-top: 15px;
+      font-size: 14px;
+      color: #888;
       text-align: center;
     }
   </style>
 </head>
 <body>
 
-  <h1>DETHEMBER - THE RED REALM</h1>
-  <canvas id="gameCanvas" width="1280" height="640"></canvas>
+  <h1>DETHEMBER GAME - TEST RUN</h1>
+  <canvas id="gameCanvas" width="960" height="540"></canvas>
 
   <div class="controls-info">
-    Move: <strong>A / D</strong> or <strong>Left / Right Arrows</strong> | 
-    Jump: <strong>W / Space / Up</strong> | 
+    Movement: <strong>A / D</strong> or <strong>Left / Right Arrows</strong> | 
+    Jump: <strong>W / Space / Up Arrow</strong> | 
     Attack: <strong>J / Z</strong>
   </div>
 
@@ -63,11 +59,11 @@
     const canvas = document.getElementById('gameCanvas');
     const ctx = canvas.getContext('2d');
 
-    // Load Wide Background (2400 x 448)
+    // Load Stage Background (1777 x 1000 original pixels mapped to 960x540 canvas)
     const bgImage = new Image();
-    bgImage.src = 'background .jpg';
+    bgImage.src = 'BGDARK.png';
 
-    // Load Character Sprites
+    // Load Individual Move PNGs & JPGs with exact Jane filenames
     const sprites = {
       idle: new Image(),
       front: new Image(),
@@ -81,43 +77,31 @@
     };
 
     sprites.idle.src = 'Jane idle.png';
-    sprites.front.src = 'Jane front.png';
-    sprites.side.src = 'Jane Side.png';
-    sprites.back.src = 'Jane back.png';
-    sprites.walk.src = 'Jane walk.png';
-    sprites.attack.src = 'Jane attack.png';
-    sprites.jump.src = 'Jane jump.png';
-    sprites.hurt.src = 'Jane hurt.png';
-    sprites.death.src = 'Jane death.png';
+    sprites.front.src = 'Jane front.jpg';
+    sprites.side.src = 'Jane Side.jpg';
+    sprites.back.src = 'Jane back.jpg';
+    sprites.walk.src = 'Jane walk.jpg';
+    sprites.attack.src = 'Jane attack.jpg';
+    sprites.jump.src = 'Jane jump.jpg';
+    sprites.hurt.src = 'Jane hurt.jpg';
+    sprites.death.src = 'Jane death.jpg';
 
-    // World & Scaling Configuration
-    const bgOrigW = 2400;
-    const bgOrigH = 448;
-    // Scale background height to match canvas height (640px), maintaining aspect ratio for width
-    const worldHeight = canvas.height;
-    const worldWidth = bgOrigW * (worldHeight / bgOrigH); // ~3428px wide world
+    // Character Base Dimensions
+    const CHAR_WIDTH = 142;  // Scaled proportionally for gameplay view (Aspect Ratio 284:500)
+    const CHAR_HEIGHT = 250; // Half of 500px to fit comfortably on 540px high canvas
 
-    // Ground line aligned with the rocky terrain in your background
-    const groundY = 530;
+    // Ground Baseline
+    const groundY = 480;
 
-    // Scale factor to fit Jane perfectly into the 640px height canvas
-    const spriteScale = 0.65;
-
-    // Camera and Player State
-    const camera = {
-      x: 0,
-      width: canvas.width,
-      maxX: worldWidth - canvas.width
-    };
-
+    // Player State & Physics
     const player = {
-      x: 200, // World X position
-      y: groundY - 250,
+      x: 120,
+      y: groundY - CHAR_HEIGHT,
       vx: 0,
       vy: 0,
-      speed: 6,
-      jumpStrength: -15,
-      gravity: 0.65,
+      speed: 4.5,
+      jumpStrength: -13,
+      gravity: 0.6,
       isGrounded: false,
       facingRight: true,
       isAttacking: false,
@@ -133,7 +117,7 @@
       if (['ArrowUp', 'w', 'W', ' '].includes(e.key)) keys.up = true;
       if (['j', 'J', 'z', 'Z'].includes(e.key) && !player.isAttacking) {
         player.isAttacking = true;
-        player.attackTimer = 22;
+        player.attackTimer = 18;
       }
     });
 
@@ -167,26 +151,17 @@
       player.y += player.vy;
 
       // Ground Collision
-      const activeImg = player.currentSprite;
-      const baseHeight = activeImg.naturalHeight || 300;
-      const currentScaledHeight = baseHeight * spriteScale;
-
-      if (player.y + currentScaledHeight >= groundY) {
-        player.y = groundY - currentScaledHeight;
+      if (player.y + CHAR_HEIGHT >= groundY) {
+        player.y = groundY - CHAR_HEIGHT;
         player.vy = 0;
         player.isGrounded = true;
       }
 
-      // World Boundary Limits
-      if (player.x < 20) player.x = 20;
-      if (player.x > worldWidth - 120) player.x = worldWidth - 120;
+      // Canvas Boundaries
+      if (player.x < -20) player.x = -20;
+      if (player.x > canvas.width - CHAR_WIDTH + 20) player.x = canvas.width - CHAR_WIDTH + 20;
 
-      // Camera Tracking (Follows player horizontally across the 2400+ px world)
-      camera.x = player.x - canvas.width / 2;
-      if (camera.x < 0) camera.x = 0;
-      if (camera.x > camera.maxX) camera.x = camera.maxX;
-
-      // Attack Timer
+      // Attack Duration Timer
       if (player.isAttacking) {
         player.attackTimer--;
         if (player.attackTimer <= 0) {
@@ -194,7 +169,7 @@
         }
       }
 
-      // Select Sprite State
+      // Select Active Sprite State
       if (player.isAttacking) {
         player.currentSprite = sprites.attack;
       } else if (!player.isGrounded) {
@@ -209,30 +184,33 @@
     function render() {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-      // Render Parallax / Scrolling Background
+      // Render Background Stage
       if (bgImage.complete && bgImage.naturalWidth !== 0) {
-        ctx.drawImage(bgImage, -camera.x, 0, worldWidth, worldHeight);
+        ctx.drawImage(bgImage, 0, 0, canvas.width, canvas.height);
       } else {
-        ctx.fillStyle = '#100508';
+        ctx.fillStyle = '#0f0a0a';
         ctx.fillRect(0, 0, canvas.width, canvas.height);
       }
 
-      // Render Character (Translated by camera position)
+      // Render Floor Line
+      ctx.strokeStyle = '#4a0e0e';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(0, groundY);
+      ctx.lineTo(canvas.width, groundY);
+      ctx.stroke();
+
+      // Render Character Sprite with updated Jane dimensions & scaling
       const activeImg = player.currentSprite;
       if (activeImg.complete && activeImg.naturalWidth !== 0) {
         ctx.save();
-        
-        const renderWidth = activeImg.naturalWidth * spriteScale;
-        const renderHeight = activeImg.naturalHeight * spriteScale;
-        // Screen position = World position - Camera position
-        const screenX = player.x - camera.x;
 
         if (!player.facingRight) {
-          ctx.translate(screenX + renderWidth, player.y);
+          ctx.translate(player.x + CHAR_WIDTH, player.y);
           ctx.scale(-1, 1);
-          ctx.drawImage(activeImg, 0, 0, renderWidth, renderHeight);
+          ctx.drawImage(activeImg, 0, 0, CHAR_WIDTH, CHAR_HEIGHT);
         } else {
-          ctx.drawImage(activeImg, screenX, player.y, renderWidth, renderHeight);
+          ctx.drawImage(activeImg, player.x, player.y, CHAR_WIDTH, CHAR_HEIGHT);
         }
         ctx.restore();
       }
