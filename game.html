@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Dethember Game - Prototype v0.4</title>
+  <title>Dethember Game - Prototype v0.5</title>
   <style>
     * {
       box-sizing: border-box;
@@ -62,11 +62,11 @@
     const canvas = document.getElementById('gameCanvas');
     const ctx = canvas.getContext('2d');
 
-    // Load Stage Background
+    // Load Panoramic Background Image
     const bgImage = new Image();
-    bgImage.src = 'BGDARK.png';
+    bgImage.src = 'background .jpg';
 
-    // Load New Character Sprites
+    // Load Character Sprites
     const sprites = {
       idle: new Image(),
       front: new Image(),
@@ -89,15 +89,21 @@
     sprites.hurt.src = 'Jane hurt.png';
     sprites.death.src = 'Jane death.png';
 
-    // Ground Baseline (Adjusted for higher canvas height)
+    // World & Ground Settings
+    const worldWidth = 3840; // 3x canvas width for expansive scrolling
     const groundY = 620;
-
-    // Scale Multiplier for Character Rendering
     const spriteScale = 2.0;
 
-    // Player State & Physics
+    // Camera Object
+    const camera = {
+      x: 0,
+      width: canvas.width,
+      height: canvas.height
+    };
+
+    // Player State & Physics (Positioned in World Space)
     const player = {
-      x: 150,
+      x: 300,
       y: groundY - 200,
       vx: 0,
       vy: 0,
@@ -163,9 +169,15 @@
         player.isGrounded = true;
       }
 
-      // Canvas Boundaries
-      if (player.x < -30) player.x = -30;
-      if (player.x > canvas.width - 150) player.x = canvas.width - 150;
+      // World Boundaries (Keep player inside the wide stage)
+      if (player.x < 50) player.x = 50;
+      if (player.x > worldWidth - 150) player.x = worldWidth - 150;
+
+      // Update Camera to Follow Player Smoothly
+      camera.x = player.x - camera.width / 2;
+      // Clamp camera within world bounds
+      if (camera.x < 0) camera.x = 0;
+      if (camera.x > worldWidth - camera.width) camera.x = worldWidth - camera.width;
 
       // Attack Duration Timer
       if (player.isAttacking) {
@@ -190,36 +202,30 @@
     function render() {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-      // Render Stage Background
+      // Render Panoramic Background stretched across the entire world width
       if (bgImage.complete && bgImage.naturalWidth !== 0) {
-        ctx.drawImage(bgImage, 0, 0, canvas.width, canvas.height);
+        // Draw background shifted by camera position for scrolling effect
+        ctx.drawImage(bgImage, -camera.x, 0, worldWidth, canvas.height);
       } else {
         ctx.fillStyle = '#0a080c';
         ctx.fillRect(0, 0, canvas.width, canvas.height);
       }
 
-      // Render Floor Baseline
-      ctx.strokeStyle = '#5c1212';
-      ctx.lineWidth = 3;
-      ctx.beginPath();
-      ctx.moveTo(0, groundY);
-      ctx.lineTo(canvas.width, groundY);
-      ctx.stroke();
-
-      // Render Character Sprite dynamically using image natural dimensions & scale
+      // Render Character Sprite in World Space (offset by camera position)
       const activeImg = player.currentSprite;
       if (activeImg.complete && activeImg.naturalWidth !== 0) {
         ctx.save();
         
         const renderWidth = activeImg.naturalWidth * spriteScale;
         const renderHeight = activeImg.naturalHeight * spriteScale;
+        const screenX = player.x - camera.x;
 
         if (!player.facingRight) {
-          ctx.translate(player.x + renderWidth, player.y);
+          ctx.translate(screenX + renderWidth, player.y);
           ctx.scale(-1, 1);
           ctx.drawImage(activeImg, 0, 0, renderWidth, renderHeight);
         } else {
-          ctx.drawImage(activeImg, player.x, player.y, renderWidth, renderHeight);
+          ctx.drawImage(activeImg, screenX, player.y, renderWidth, renderHeight);
         }
         ctx.restore();
       }
