@@ -2,13 +2,15 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Dethember Game - Prototype v0.3</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>Dethember Game - Mobile & Desktop</title>
   <style>
     * {
       box-sizing: border-box;
       margin: 0;
       padding: 0;
+      user-select: none;
+      -webkit-user-select: none;
     }
 
     body {
@@ -21,12 +23,20 @@
       justify-content: center;
       min-height: 100vh;
       overflow: hidden;
+      touch-action: manipulation;
     }
 
     h1 {
       margin-bottom: 10px;
       color: #791b1b;
       letter-spacing: 2px;
+      font-size: 1.2rem;
+    }
+
+    .game-container {
+      position: relative;
+      width: 100%;
+      max-width: 960px;
     }
 
     #gameCanvas {
@@ -34,25 +44,74 @@
       box-shadow: 0 0 25px rgba(121, 27, 27, 0.6);
       background-color: #08080a;
       display: block;
+      width: 100%;
+      height: auto;
     }
 
     .controls-info {
-      margin-top: 15px;
-      font-size: 14px;
+      margin-top: 10px;
+      font-size: 12px;
       color: #888;
       text-align: center;
+    }
+
+    /* Mobile Virtual Controls */
+    .mobile-controls {
+      display: flex;
+      justify-content: space-between;
+      width: 100%;
+      max-width: 960px;
+      padding: 10px 15px;
+      box-sizing: border-box;
+    }
+
+    .d-pad, .action-btns {
+      display: flex;
+      gap: 10px;
+    }
+
+    .btn {
+      width: 60px;
+      height: 60px;
+      background: rgba(121, 27, 27, 0.4);
+      border: 2px solid #791b1b;
+      color: #fff;
+      font-weight: bold;
+      font-size: 18px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      touch-action: manipulation;
+    }
+
+    .btn:active {
+      background: rgba(170, 30, 30, 0.8);
     }
   </style>
 </head>
 <body>
 
   <h1>DETHEMBER GAME - TEST RUN</h1>
-  <canvas id="gameCanvas" width="960" height="540"></canvas>
+  
+  <div class="game-container">
+    <canvas id="gameCanvas" width="960" height="540"></canvas>
+  </div>
+
+  <!-- On-screen controls for phones and tablets -->
+  <div class="mobile-controls">
+    <div class="d-pad">
+      <button class="btn" id="btnLeft">◄</button>
+      <button class="btn" id="btnRight">►</button>
+    </div>
+    <div class="action-btns">
+      <button class="btn" id="btnJump">▲</button>
+      <button class="btn" id="btnAttack">ATK</button>
+    </div>
+  </div>
 
   <div class="controls-info">
-    Movement: <strong>A / D</strong> or <strong>Left / Right Arrows</strong> | 
-    Jump: <strong>W / Space / Up Arrow</strong> | 
-    Attack: <strong>J / Z</strong>
+    Keyboard: <strong>A / D / W</strong> or <strong>Arrows</strong> | Jump: <strong>Space</strong> | Attack: <strong>J / Z</strong>
   </div>
 
   <script>
@@ -63,7 +122,7 @@
     const bgImage = new Image();
     bgImage.src = 'BGDARK.png';
 
-    // Load Individual Move PNGs with exact Jane filenames in .png format
+    // Load Individual Move PNGs with exact Jane filenames
     const sprites = {
       idle: new Image(),
       front: new Image(),
@@ -86,7 +145,7 @@
     sprites.hurt.src = 'Jane hurt.png';
     sprites.death.src = 'Jane death.png';
 
-    // Character Base Dimensions (Scaled proportionally to fit the 960x540 canvas)
+    // Character Base Dimensions
     const CHAR_WIDTH = 142;
     const CHAR_HEIGHT = 250;
 
@@ -111,6 +170,7 @@
 
     const keys = { left: false, right: false, up: false };
 
+    // Keyboard Listeners (Desktop)
     window.addEventListener('keydown', (e) => {
       if (['ArrowLeft', 'a', 'A'].includes(e.key)) keys.left = true;
       if (['ArrowRight', 'd', 'D'].includes(e.key)) keys.right = true;
@@ -126,6 +186,25 @@
       if (['ArrowRight', 'd', 'D'].includes(e.key)) keys.right = false;
       if (['ArrowUp', 'w', 'W', ' '].includes(e.key)) keys.up = false;
     });
+
+    // Mobile Touch Controller Setup
+    function bindTouchBtn(btnId, actionStart, actionEnd) {
+      const btn = document.getElementById(btnId);
+      btn.addEventListener('touchstart', (e) => { e.preventDefault(); actionStart(); });
+      btn.addEventListener('touchend', (e) => { e.preventDefault(); actionEnd(); });
+      btn.addEventListener('mousedown', (e) => { e.preventDefault(); actionStart(); });
+      btn.addEventListener('mouseup', (e) => { e.preventDefault(); actionEnd(); });
+    }
+
+    bindTouchBtn('btnLeft', () => { keys.left = true; }, () => { keys.left = false; });
+    bindTouchBtn('btnRight', () => { keys.right = true; }, () => { keys.right = false; });
+    bindTouchBtn('btnJump', () => { keys.up = true; }, () => { keys.up = false; });
+    bindTouchBtn('btnAttack', () => {
+      if (!player.isAttacking) {
+        player.isAttacking = true;
+        player.attackTimer = 18;
+      }
+    }, () => {});
 
     function update() {
       // Horizontal Movement
